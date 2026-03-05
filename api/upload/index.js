@@ -24,6 +24,11 @@ export default async function (context, req) {
       return
     }
 
+    if (fileBuffer.length > 10 * 1024 * 1024) {
+      context.res = { status: 413, body: 'File too large (max 10MB)' }
+      return
+    }
+
     const encryptionKey = process.env.CONTACT_ENCRYPTION_KEY || 'default-dev-key'
     const portfolio = await parseDocx(fileBuffer, fields.contactPasscode || '', encryptionKey)
 

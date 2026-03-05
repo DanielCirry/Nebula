@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, type ReactNode } from 'react'
+import { useState, useEffect, useCallback, useMemo, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { PortfolioData, OtherSection } from '../../shared/types'
@@ -123,7 +123,7 @@ export default function Portfolio() {
       .catch(() => {})
   }, [])
 
-  const sections = buildSections(data)
+  const sections = useMemo(() => buildSections(data), [data])
   const goBack = useCallback(() => setActiveSection(null), [])
 
   useEffect(() => {
