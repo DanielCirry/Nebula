@@ -1,0 +1,141 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #070714;
+  --color-text-primary: #f0f0ff;
+  --color-text-secondary: #b0b0d0;
+  --color-text-muted: #6060a0;
+  --color-accent: #00d4ff;
+  --color-accent-dim: rgba(0, 212, 255, 0.12);
+  --color-accent-glow: rgba(0, 212, 255, 0.25);
+  --color-accent-secondary: #a855f7;
+  --color-accent-warm: #f97316;
+  --color-border: rgba(255, 255, 255, 0.06);
+  --font-sans: "Space Grotesk", system-ui, sans-serif;
+}
+
+html, body {
+  overflow: hidden;
+  height: 100vh;
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: #070714;
+}
+
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+
+/* ═══ 3D Scene ═══ */
+.preserve-3d { transform-style: preserve-3d; }
+
+/* ═══ Vibrant Gradient Text ═══ */
+.gradient-text {
+  background: linear-gradient(135deg, #00d4ff 0%, #a855f7 50%, #ec4899 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-text-glow {
+  filter: drop-shadow(0 0 30px rgba(0, 212, 255, 0.25)) drop-shadow(0 0 60px rgba(168, 85, 247, 0.15));
+}
+
+/* ═══ Stellar / Space Text ═══ */
+.stellar-text {
+  color: rgba(220, 225, 255, 0.9);
+  text-shadow:
+    0 0 40px rgba(180, 200, 255, 0.3),
+    0 0 80px rgba(120, 140, 200, 0.15),
+    0 0 2px rgba(255, 255, 255, 0.8);
+  letter-spacing: 0.06em;
+}
+
+/* Hero text — bigger glow, more pop */
+.text-hero {
+  background: linear-gradient(135deg, #00d4ff 0%, #818cf8 30%, #a855f7 60%, #ec4899 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 40px rgba(0, 212, 255, 0.3)) drop-shadow(0 0 80px rgba(168, 85, 247, 0.2));
+}
+
+/* ═══ Gradient Divider ═══ */
+.gradient-line {
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, #00d4ff 15%, #a855f7 50%, #ec4899 85%, transparent 100%);
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.2), 0 0 30px rgba(168, 85, 247, 0.1);
+}
+
+/* ═══ Glass Morphism ═══ */
+.glass {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.glass-subtle {
+  background: rgba(255, 255, 255, 0.025);
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* ═══ Neon Divider ═══ */
+.neon-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0,212,255,0.4) 15%, rgba(168,85,247,0.3) 50%, rgba(236,72,153,0.3) 85%, transparent);
+  position: relative;
+}
+
+.neon-divider::after {
+  content: '';
+  position: absolute;
+  top: -2px; left: 0; right: 0;
+  height: 5px;
+  background: linear-gradient(90deg, transparent, rgba(0,212,255,0.15) 15%, rgba(168,85,247,0.1) 50%, transparent);
+  filter: blur(4px);
+}
+
+/* ═══ Animations ═══ */
+@keyframes mesh-drift-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(30px, -40px) scale(1.08); }
+  50% { transform: translate(-20px, 30px) scale(0.95); }
+  75% { transform: translate(40px, 20px) scale(1.05); }
+}
+
+@keyframes mesh-drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-40px, 30px) scale(1.06); }
+  66% { transform: translate(30px, -20px) scale(0.94); }
+}
+
+@keyframes mesh-drift-3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(-30px, -20px) scale(1.04); }
+  50% { transform: translate(20px, 40px) scale(1.1); }
+  75% { transform: translate(30px, -30px) scale(0.96); }
+}
+
+@keyframes mesh-drift-4 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  30% { transform: translate(25px, 35px) scale(1.07); }
+  60% { transform: translate(-35px, -15px) scale(0.93); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.5; transform: scale(0.95); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+}

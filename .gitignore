@@ -1,0 +1,6 @@
+node_modules
+dist
+dev-portfolio.json
+*.local
+.env
+.env.*

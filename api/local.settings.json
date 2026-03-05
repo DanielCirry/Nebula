@@ -1,0 +1,10 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "AzureWebJobsStorage": "",
+    "UPLOAD_PASSWORD": "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
+    "CONTACT_ENCRYPTION_KEY": "dev-encryption-key-change-in-production",
+    "AZURE_STORAGE_CONNECTION_STRING": ""
+  }
+}
