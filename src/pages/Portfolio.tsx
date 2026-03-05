@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback, useMemo, type ReactNode } from 'react'
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { PortfolioData, OtherSection } from '../../shared/types'
 import { sampleData } from '../lib/sampleData'
 import AuroraBackground from '../components/AuroraBackground'
-import Scene3D from '../components/Scene3D'
+const Scene3D = lazy(() => import('../components/Scene3D'))
 import ScrambleTitle from '../components/ScrambleTitle'
 import About from '../sections/About'
 import Skills from '../sections/Skills'
@@ -129,10 +129,33 @@ export default function Portfolio() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && activeSection) { e.preventDefault(); goBack() }
+
+      if (sections.length === 0) return
+
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault()
+        if (!activeSection) { setActiveSection(sections[sections.length - 1].id); return }
+        const idx = sections.findIndex((s) => s.id === activeSection)
+        const prev = (idx - 1 + sections.length) % sections.length
+        setActiveSection(sections[prev].id)
+      }
+
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault()
+        if (!activeSection) { setActiveSection(sections[0].id); return }
+        const idx = sections.findIndex((s) => s.id === activeSection)
+        const next = (idx + 1) % sections.length
+        setActiveSection(sections[next].id)
+      }
+
+      if ((e.key === 'Enter' || e.key === ' ') && !activeSection) {
+        e.preventDefault()
+        setActiveSection(sections[0].id)
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [activeSection, goBack])
+  }, [activeSection, goBack, sections])
 
   const current = activeSection ? sections.find((s) => s.id === activeSection) : null
 
@@ -140,12 +163,14 @@ export default function Portfolio() {
     <div className="fixed inset-0 overflow-hidden" style={{ background: '#070714' }}>
       <AuroraBackground />
 
-      <Scene3D
-        sections={sections.map((s) => ({ id: s.id, label: s.label }))}
-        activeSection={activeSection}
-        onSelect={setActiveSection}
-        onDismiss={goBack}
-      />
+      <Suspense fallback={null}>
+        <Scene3D
+          sections={sections.map((s) => ({ id: s.id, label: s.label }))}
+          activeSection={activeSection}
+          onSelect={setActiveSection}
+          onDismiss={goBack}
+        />
+      </Suspense>
 
       {/* Hero overlay */}
       <AnimatePresence>

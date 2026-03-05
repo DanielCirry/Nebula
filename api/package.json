@@ -4,6 +4,7 @@
   "type": "module",
   "dependencies": {
     "@azure/storage-blob": "^12.26.0",
+    "bcryptjs": "^3.0.3",
     "busboy": "^1.6.0",
     "cheerio": "^1.0.0",
     "mammoth": "^1.9.0"

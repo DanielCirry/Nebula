@@ -3,6 +3,7 @@ import * as cheerio from 'cheerio'
 import { classifyHeading } from './sectionMap.js'
 import { classifySkills } from './skillMap.js'
 import { createHash, createCipheriv, randomBytes } from 'crypto'
+import bcryptjs from 'bcryptjs'
 
 const EMAIL_REGEX = /[\w.-]+@[\w.-]+\.\w{2,}/g
 const PHONE_REGEX = /(?:\+?\d{1,3}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{3,4}[-.\s]?\d{3,4}/g
@@ -787,5 +788,5 @@ function encryptContact(contactInfo, passcode, encryptionKey) {
 }
 
 function hashPasscode(passcode) {
-  return createHash('sha256').update(passcode || '').digest('hex')
+  return bcryptjs.hashSync(passcode || '', 10)
 }

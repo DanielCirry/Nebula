@@ -13,6 +13,7 @@
     "@react-three/fiber": "^8.18.0",
     "@react-three/postprocessing": "^2.19.1",
     "@tailwindcss/vite": "^4.2.1",
+    "bcryptjs": "^3.0.3",
     "flubber": "^0.4.2",
     "framer-motion": "^12.35.0",
     "postprocessing": "^6.38.3",
@@ -24,6 +25,7 @@
     "unpdf": "^1.4.0"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
     "@types/busboy": "^1.5.4",
     "@types/flubber": "^0.4.0",
     "@types/node": "^25.3.3",

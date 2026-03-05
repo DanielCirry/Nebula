@@ -2,18 +2,25 @@ import type { Plugin } from 'vite'
 import { createHash, createCipheriv, createDecipheriv, randomBytes } from 'crypto'
 import { readFileSync, writeFileSync, existsSync } from 'fs'
 import { resolve } from 'path'
+import bcryptjs from 'bcryptjs'
 
 const DATA_PATH = resolve('dev-portfolio.json')
 const ENCRYPTION_KEY = 'dev-encryption-key-change-in-production'
 
-function sha256(value: string) {
-  return createHash('sha256').update(value || '').digest('hex')
+async function hashPassword(value: string): Promise<string> {
+  return bcryptjs.hash(value, 10)
 }
 
-function checkAdminPassword(portfolio: any, password: string): boolean {
+async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  if (hash.startsWith('$2')) return bcryptjs.compare(password, hash)
+  // Legacy SHA256 fallback
+  return createHash('sha256').update(password || '').digest('hex') === hash
+}
+
+async function checkAdminPassword(portfolio: any, password: string): Promise<boolean> {
   const hash = portfolio?.meta?.adminPasswordHash
   if (!hash) return true // no password set = open access
-  return sha256(password) === hash
+  return verifyPassword(password, hash)
 }
 
 export function devApiPlugin(): Plugin {
@@ -62,7 +69,7 @@ export function devApiPlugin(): Plugin {
           return
         }
 
-        if (sha256(passcode) !== contact.passcodeHash) {
+        if (!await verifyPassword(passcode, contact.passcodeHash)) {
           res.writeHead(401).end('Invalid passcode')
           return
         }
@@ -92,7 +99,7 @@ export function devApiPlugin(): Plugin {
           // Check admin password if one exists
           if (existsSync(DATA_PATH)) {
             const existing = JSON.parse(readFileSync(DATA_PATH, 'utf-8'))
-            if (!checkAdminPassword(existing, fields.adminPassword || '')) {
+            if (!await checkAdminPassword(existing, fields.adminPassword || '')) {
               res.writeHead(401).end('Invalid admin password')
               return
             }
@@ -115,7 +122,7 @@ export function devApiPlugin(): Plugin {
 
           // Set admin password if provided
           if (fields.adminPassword) {
-            portfolio.meta.adminPasswordHash = sha256(fields.adminPassword)
+            portfolio.meta.adminPasswordHash = await hashPassword(fields.adminPassword)
           }
 
           writeFileSync(DATA_PATH, JSON.stringify(portfolio, null, 2))
@@ -137,7 +144,7 @@ export function devApiPlugin(): Plugin {
 
         const portfolio = JSON.parse(readFileSync(DATA_PATH, 'utf-8'))
 
-        if (!checkAdminPassword(portfolio, adminPassword || '')) {
+        if (!await checkAdminPassword(portfolio, adminPassword || '')) {
           res.writeHead(401).end('Invalid admin password')
           return
         }
@@ -162,13 +169,13 @@ export function devApiPlugin(): Plugin {
 
         const portfolio = JSON.parse(readFileSync(DATA_PATH, 'utf-8'))
 
-        if (!checkAdminPassword(portfolio, currentPassword || '')) {
+        if (!await checkAdminPassword(portfolio, currentPassword || '')) {
           res.writeHead(401).end('Invalid current password')
           return
         }
 
         if (newPassword) {
-          portfolio.meta.adminPasswordHash = sha256(newPassword)
+          portfolio.meta.adminPasswordHash = await hashPassword(newPassword)
         } else {
           delete portfolio.meta.adminPasswordHash
         }
@@ -188,7 +195,7 @@ export function devApiPlugin(): Plugin {
 
         const portfolio = JSON.parse(readFileSync(DATA_PATH, 'utf-8'))
 
-        if (!checkAdminPassword(portfolio, adminPassword || '')) {
+        if (!await checkAdminPassword(portfolio, adminPassword || '')) {
           res.writeHead(401).end('Invalid admin password')
           return
         }
@@ -225,7 +232,7 @@ export function devApiPlugin(): Plugin {
             encrypted: true,
             data: enc + ':' + authTag,
             iv: iv.toString('hex'),
-            passcodeHash: sha256(passcode),
+            passcodeHash: await hashPassword(passcode),
           }
         } else {
           portfolio.contact = { encrypted: false, data: contactInfo }

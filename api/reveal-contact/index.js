@@ -1,5 +1,6 @@
 import { BlobServiceClient } from '@azure/storage-blob'
 import { createHash, createDecipheriv } from 'crypto'
+import bcryptjs from 'bcryptjs'
 
 export default async function (context, req) {
   const passcode = req.body?.passcode
@@ -23,8 +24,14 @@ export default async function (context, req) {
     const body = await streamToString(download.readableStreamBody)
     const portfolio = JSON.parse(body)
 
-    const passcodeHash = createHash('sha256').update(passcode).digest('hex')
-    if (passcodeHash !== portfolio.contact?.passcodeHash) {
+    const storedHash = portfolio.contact?.passcodeHash
+    let valid = false
+    if (storedHash?.startsWith('$2')) {
+      valid = await bcryptjs.compare(passcode, storedHash)
+    } else {
+      valid = createHash('sha256').update(passcode).digest('hex') === storedHash
+    }
+    if (!valid) {
       context.res = { status: 401, body: 'Incorrect passcode' }
       return
     }
