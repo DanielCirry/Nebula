@@ -251,6 +251,7 @@ export default function Upload() {
                       onChange={(e) => setEditPw(e.target.value)}
                       className={inputClass}
                       placeholder="Admin password"
+                      aria-label="Admin password for editing"
                     />
                   )}
                   <div>
@@ -299,6 +300,7 @@ export default function Upload() {
                       onChange={(e) => setCurrentPw(e.target.value)}
                       className={inputClass}
                       placeholder="Current password"
+                      aria-label="Current password"
                     />
                   )}
                   <input
@@ -307,6 +309,7 @@ export default function Upload() {
                     onChange={(e) => setNewPw(e.target.value)}
                     className={inputClass}
                     placeholder="New password (leave empty to remove)"
+                    aria-label="New admin password"
                   />
                   <button onClick={handleSetPassword} className={btnSmall}>Save</button>
                   {pwMsg && <p className={`text-xs ${pwMsg.error ? 'text-red-400' : 'text-accent'}`}>{pwMsg.text}</p>}
@@ -327,6 +330,7 @@ export default function Upload() {
                       onChange={(e) => setAdminPwForPasscode(e.target.value)}
                       className={inputClass}
                       placeholder="Admin password"
+                      aria-label="Admin password for passcode change"
                     />
                   )}
                   <input
@@ -335,6 +339,7 @@ export default function Upload() {
                     onChange={(e) => setNewPasscode(e.target.value)}
                     className={inputClass}
                     placeholder="New passcode (leave empty to remove)"
+                    aria-label="Contact passcode"
                   />
                   <button onClick={handleSetPasscode} className={btnSmall}>Save</button>
                   {pcMsg && <p className={`text-xs ${pcMsg.error ? 'text-red-400' : 'text-accent'}`}>{pcMsg.text}</p>}
