@@ -57,9 +57,6 @@ export default function Contact({ contact }: { contact?: ContactData }) {
     )
   }
 
-  // Encrypted — no data stored
-  if (!contact.data) return null
-
   const handleReveal = async () => {
     if (!passcode.trim()) return
     setLoading(true)

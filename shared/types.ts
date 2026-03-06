@@ -40,11 +40,8 @@ export interface OtherSection {
   content: string
 }
 
-export interface EncryptedContact {
+export interface ProtectedContact {
   encrypted: true
-  data: string
-  iv: string
-  passcodeHash: string
 }
 
 export interface PlainContact {
@@ -52,7 +49,7 @@ export interface PlainContact {
   data: Record<string, string>
 }
 
-export type ContactData = EncryptedContact | PlainContact
+export type ContactData = ProtectedContact | PlainContact
 
 export interface PortfolioData {
   meta: PortfolioMeta

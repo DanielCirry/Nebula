@@ -1,20 +1,16 @@
 import type { Plugin } from 'vite'
-import { createHash, createCipheriv, createDecipheriv, randomBytes } from 'crypto'
 import { readFileSync, writeFileSync, existsSync } from 'fs'
 import { resolve } from 'path'
 import bcryptjs from 'bcryptjs'
 
 const DATA_PATH = resolve('dev-portfolio.json')
-const ENCRYPTION_KEY = 'dev-encryption-key-change-in-production'
 
 async function hashPassword(value: string): Promise<string> {
   return bcryptjs.hash(value, 10)
 }
 
 async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  if (hash.startsWith('$2')) return bcryptjs.compare(password, hash)
-  // Legacy SHA256 fallback
-  return createHash('sha256').update(password || '').digest('hex') === hash
+  return bcryptjs.compare(password, hash)
 }
 
 async function checkAdminPassword(portfolio: any, password: string): Promise<boolean> {
@@ -34,12 +30,18 @@ export function devApiPlugin(): Plugin {
           res.end(JSON.stringify({ error: 'No portfolio data' }))
           return
         }
-        const data = readFileSync(DATA_PATH, 'utf-8')
+        const portfolio = JSON.parse(readFileSync(DATA_PATH, 'utf-8'))
+
+        // Strip contact data when protected
+        if (portfolio.contact?.encrypted) {
+          portfolio.contact = { encrypted: true }
+        }
+
         res.writeHead(200, { 'Content-Type': 'application/json' })
-        res.end(data)
+        res.end(JSON.stringify(portfolio))
       })
 
-      // GET /api/auth-status — check if admin password is set
+      // GET /api/auth-status
       server.middlewares.use('/api/auth-status', (_req, res) => {
         if (!existsSync(DATA_PATH)) {
           res.writeHead(200, { 'Content-Type': 'application/json' })
@@ -65,7 +67,7 @@ export function devApiPlugin(): Plugin {
         const portfolio = JSON.parse(readFileSync(DATA_PATH, 'utf-8'))
         const contact = portfolio.contact
         if (!contact?.encrypted || !contact?.data) {
-          res.writeHead(404).end('No encrypted contact data')
+          res.writeHead(404).end('No protected contact data')
           return
         }
 
@@ -74,18 +76,8 @@ export function devApiPlugin(): Plugin {
           return
         }
 
-        try {
-          const [encrypted, authTag] = contact.data.split(':')
-          const key = createHash('sha256').update(ENCRYPTION_KEY).digest()
-          const decipher = createDecipheriv('aes-256-gcm', key, Buffer.from(contact.iv, 'hex'))
-          decipher.setAuthTag(Buffer.from(authTag, 'hex'))
-          let decrypted = decipher.update(encrypted, 'hex', 'utf8')
-          decrypted += decipher.final('utf8')
-          res.writeHead(200, { 'Content-Type': 'application/json' })
-          res.end(decrypted)
-        } catch {
-          res.writeHead(500).end('Decryption failed')
-        }
+        res.writeHead(200, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify(contact.data))
       })
 
       // POST /api/upload
@@ -116,9 +108,8 @@ export function devApiPlugin(): Plugin {
           }
 
           const isPdf = (fields.filename || '').toLowerCase().endsWith('.pdf') || fields.mimetype === 'application/pdf'
-          console.log('[upload] filename:', fields.filename, 'mime:', fields.mimetype, 'isPdf:', isPdf)
           const { parseCv } = await import('./api/lib/parseDocx.js')
-          const portfolio = await parseCv(fileBuffer, fields.contactPasscode || '', ENCRYPTION_KEY, isPdf)
+          const portfolio = await parseCv(fileBuffer, fields.contactPasscode || '', isPdf)
 
           // Set admin password if provided
           if (fields.adminPassword) {
@@ -200,42 +191,17 @@ export function devApiPlugin(): Plugin {
           return
         }
 
-        // Get the plain contact data (decrypt if needed)
-        let contactInfo: Record<string, string>
-        const contact = portfolio.contact
-        if (contact?.encrypted && contact?.data) {
-          try {
-            const [encrypted, authTag] = contact.data.split(':')
-            const key = createHash('sha256').update(ENCRYPTION_KEY).digest()
-            const decipher = createDecipheriv('aes-256-gcm', key, Buffer.from(contact.iv, 'hex'))
-            decipher.setAuthTag(Buffer.from(authTag, 'hex'))
-            let decrypted = decipher.update(encrypted, 'hex', 'utf8')
-            decrypted += decipher.final('utf8')
-            contactInfo = JSON.parse(decrypted)
-          } catch {
-            res.writeHead(500).end('Failed to decrypt existing contact data')
-            return
-          }
-        } else {
-          contactInfo = contact?.data || {}
-        }
+        // Get current contact data
+        const contactData = portfolio.contact?.data || {}
 
-        // Re-encrypt or store plain
         if (passcode) {
-          const iv = randomBytes(16)
-          const key = createHash('sha256').update(ENCRYPTION_KEY).digest()
-          const cipher = createCipheriv('aes-256-gcm', key, iv)
-          let enc = cipher.update(JSON.stringify(contactInfo), 'utf8', 'hex')
-          enc += cipher.final('hex')
-          const authTag = cipher.getAuthTag().toString('hex')
           portfolio.contact = {
             encrypted: true,
-            data: enc + ':' + authTag,
-            iv: iv.toString('hex'),
+            data: contactData,
             passcodeHash: await hashPassword(passcode),
           }
         } else {
-          portfolio.contact = { encrypted: false, data: contactInfo }
+          portfolio.contact = { encrypted: false, data: contactData }
         }
 
         writeFileSync(DATA_PATH, JSON.stringify(portfolio, null, 2))

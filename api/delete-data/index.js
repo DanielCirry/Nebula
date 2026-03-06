@@ -1,33 +1,23 @@
 import { BlobServiceClient } from '@azure/storage-blob'
-import { createHash } from 'crypto'
+import { readPortfolio } from '../lib/blob.js'
+import { checkAdminPassword } from '../lib/auth.js'
 
 export default async function (context, req) {
   const { password } = req.body || {}
 
-  if (!password) {
-    context.res = { status: 400, body: 'Password required' }
-    return
-  }
-
-  const uploadPassword = process.env.UPLOAD_PASSWORD
-  if (!uploadPassword) {
-    context.res = { status: 500, body: 'Server misconfigured' }
-    return
-  }
-
-  const passwordHash = createHash('sha256').update(password).digest('hex')
-  if (passwordHash !== uploadPassword) {
-    context.res = { status: 401, body: 'Invalid password' }
-    return
-  }
-
-  const connStr = process.env.AZURE_STORAGE_CONNECTION_STRING
-  if (!connStr) {
-    context.res = { status: 500, body: 'Server misconfigured' }
-    return
-  }
-
   try {
+    const portfolio = await readPortfolio()
+    if (!portfolio) {
+      context.res = { status: 404, body: 'No portfolio data' }
+      return
+    }
+
+    if (!await checkAdminPassword(portfolio, password || '')) {
+      context.res = { status: 401, body: 'Invalid password' }
+      return
+    }
+
+    const connStr = process.env.AZURE_STORAGE_CONNECTION_STRING
     const blobClient = BlobServiceClient.fromConnectionString(connStr)
     const container = blobClient.getContainerClient('portfolio-data')
     const blob = container.getBlockBlobClient('portfolio.json')

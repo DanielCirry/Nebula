@@ -38,12 +38,16 @@ export interface OtherSection {
   content: string
 }
 
-export interface EncryptedContact {
+export interface ProtectedContact {
   encrypted: true
-  data: string
-  iv: string
-  passcodeHash: string
 }
+
+export interface PlainContact {
+  encrypted: false
+  data: Record<string, string>
+}
+
+export type ContactData = ProtectedContact | PlainContact
 
 export interface PortfolioData {
   meta: PortfolioMeta
@@ -53,7 +57,7 @@ export interface PortfolioData {
   education: EducationEntry[]
   projects: ProjectEntry[]
   other: OtherSection[]
-  contact: EncryptedContact
+  contact: ContactData
 }
 
 export interface UploadRequest {

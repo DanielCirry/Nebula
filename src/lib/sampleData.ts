@@ -63,8 +63,5 @@ export const sampleData: PortfolioData = {
   other: [],
   contact: {
     encrypted: true,
-    data: 'sample-encrypted-data',
-    iv: 'sample-iv',
-    passcodeHash: 'sample-hash',
   },
 }
