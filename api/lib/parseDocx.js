@@ -344,12 +344,18 @@ function parseSkills(html) {
   const allItems = []
 
   // Try inline "Category: item1, item2" format first (common in CVs)
+  // Also handles single <p> with <br>-separated category lines
   $('p').each((_, el) => {
-    const text = $(el).text().trim()
-    const colonMatch = text.match(/^([^:]+):\s*(.+)$/)
-    if (colonMatch) {
-      const items = colonMatch[2].split(/[,;]/).map((s) => s.trim()).filter(Boolean)
-      allItems.push(...items)
+    const innerHtml = $(el).html()
+    const lines = innerHtml && /<br\s*\/?>/i.test(innerHtml)
+      ? innerHtml.split(/<br\s*\/?>/i).map(part => cheerio.load(part).text().trim())
+      : [$(el).text().trim()]
+    for (const text of lines) {
+      const colonMatch = text.match(/^([^:]+):\s*(.+)$/)
+      if (colonMatch) {
+        const items = colonMatch[2].split(/[,;]/).map((s) => s.trim()).filter(Boolean)
+        allItems.push(...items)
+      }
     }
   })
 
