@@ -8,8 +8,8 @@ export default async function (context) {
       return
     }
 
-    // Strip contact data when protected — only reveal via /api/reveal-contact
-    if (portfolio.contact?.encrypted) {
+    // Strip contact data when passcode is configured
+    if (process.env.CONTACT_PASSCODE && portfolio.contact?.data) {
       portfolio.contact = { encrypted: true }
     }
 

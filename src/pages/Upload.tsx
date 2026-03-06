@@ -14,16 +14,6 @@ export default function Upload() {
   const [hasPortfolio, setHasPortfolio] = useState(false)
   const [portfolio, setPortfolio] = useState<PortfolioData | null>(null)
 
-  // Security state
-  const [showSetPassword, setShowSetPassword] = useState(false)
-  const [currentPw, setCurrentPw] = useState('')
-  const [newPw, setNewPw] = useState('')
-  const [pwMsg, setPwMsg] = useState<{ text: string; error: boolean } | null>(null)
-
-  const [showSetPasscode, setShowSetPasscode] = useState(false)
-  const [adminPwForPasscode, setAdminPwForPasscode] = useState('')
-  const [newPasscode, setNewPasscode] = useState('')
-  const [pcMsg, setPcMsg] = useState<{ text: string; error: boolean } | null>(null)
 
   // Edit state
   const [editSection, setEditSection] = useState<string | null>(null)
@@ -86,48 +76,6 @@ export default function Upload() {
     } catch {
       setErrorMsg('Unable to connect')
       setStatus('error')
-    }
-  }
-
-  const handleSetPassword = async () => {
-    setPwMsg(null)
-    try {
-      const res = await fetch('/api/set-admin-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ currentPassword: currentPw, newPassword: newPw }),
-      })
-      if (!res.ok) {
-        setPwMsg({ text: res.status === 401 ? 'Invalid current password' : 'Failed', error: true })
-        return
-      }
-      setPwMsg({ text: 'Password updated', error: false })
-      setCurrentPw('')
-      setNewPw('')
-      fetchAuthStatus()
-    } catch {
-      setPwMsg({ text: 'Unable to connect', error: true })
-    }
-  }
-
-  const handleSetPasscode = async () => {
-    setPcMsg(null)
-    try {
-      const res = await fetch('/api/set-contact-passcode', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ adminPassword: adminPwForPasscode, passcode: newPasscode }),
-      })
-      if (!res.ok) {
-        setPcMsg({ text: res.status === 401 ? 'Invalid admin password' : 'Failed', error: true })
-        return
-      }
-      setPcMsg({ text: 'Passcode updated', error: false })
-      setAdminPwForPasscode('')
-      setNewPasscode('')
-      fetchAuthStatus()
-    } catch {
-      setPcMsg({ text: 'Unable to connect', error: true })
     }
   }
 
@@ -258,66 +206,6 @@ export default function Upload() {
               </div>
             )}
 
-            {/* Security */}
-            <div>
-              <button onClick={() => { setShowSetPassword(!showSetPassword); setPwMsg(null) }} className={btnSecondary}>
-                {authStatus?.hasAdminPassword ? 'Change Admin Password' : 'Set Admin Password'}
-              </button>
-              {showSetPassword && (
-                <div className="mt-3 space-y-2 p-4 rounded-lg glass">
-                  {authStatus?.hasAdminPassword && (
-                    <input
-                      type="password"
-                      value={currentPw}
-                      onChange={(e) => setCurrentPw(e.target.value)}
-                      className={inputClass}
-                      placeholder="Current password"
-                      aria-label="Current password"
-                    />
-                  )}
-                  <input
-                    type="password"
-                    value={newPw}
-                    onChange={(e) => setNewPw(e.target.value)}
-                    className={inputClass}
-                    placeholder="New password"
-                    aria-label="New admin password"
-                  />
-                  <button onClick={handleSetPassword} className={btnSmall}>Save</button>
-                  {pwMsg && <p className={`text-xs ${pwMsg.error ? 'text-red-400' : 'text-accent'}`}>{pwMsg.text}</p>}
-                </div>
-              )}
-            </div>
-
-            <div>
-              <button onClick={() => { setShowSetPasscode(!showSetPasscode); setPcMsg(null) }} className={btnSecondary}>
-                {authStatus?.hasPersonalPasscode ? 'Change Personal Info Passcode' : 'Set Personal Info Passcode'}
-              </button>
-              {showSetPasscode && (
-                <div className="mt-3 space-y-2 p-4 rounded-lg glass">
-                  {authStatus?.hasAdminPassword && (
-                    <input
-                      type="password"
-                      value={adminPwForPasscode}
-                      onChange={(e) => setAdminPwForPasscode(e.target.value)}
-                      className={inputClass}
-                      placeholder="Admin password"
-                      aria-label="Admin password for passcode change"
-                    />
-                  )}
-                  <input
-                    type="password"
-                    value={newPasscode}
-                    onChange={(e) => setNewPasscode(e.target.value)}
-                    className={inputClass}
-                    placeholder="New passcode"
-                    aria-label="Contact passcode"
-                  />
-                  <button onClick={handleSetPasscode} className={btnSmall}>Save</button>
-                  {pcMsg && <p className={`text-xs ${pcMsg.error ? 'text-red-400' : 'text-accent'}`}>{pcMsg.text}</p>}
-                </div>
-              )}
-            </div>
           </div>
         )}
       </div>

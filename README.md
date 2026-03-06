@@ -21,7 +21,7 @@ Upload a CV document and Nebula automatically parses it into structured sections
 - **ScrambleTitle Animation** — Section titles animate in with character-by-character scrambling effect
 - **Dynamic Sections** — Portfolio sections are built from your CV data. Unrecognized headings become custom sections with their own 3D markers
 - **Aurora Background** — Animated gradient mesh backdrop behind the 3D scene
-- **Contact Encryption** — Optionally encrypt contact info with a passcode (AES-256-GCM)
+- **Contact Protection** — Optionally hide contact info behind a passcode
 - **Admin Password Protection** — Restrict upload and edit access with an optional admin password
 
 ## 3D Scene
@@ -58,6 +58,22 @@ npm run dev
 
 The dev server runs on `http://localhost:4200`.
 
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `AZURE_STORAGE_CONNECTION_STRING` | Yes | Azure Blob Storage connection string (from Storage Account → Access keys) |
+| `ADMIN_PASSWORD` | No | Protects upload and edit endpoints. If unset, anyone can upload/edit. |
+| `CONTACT_PASSCODE` | No | Protects personal info visibility. If unset, contact details are shown publicly. |
+
+For local development, create a `.env` file in the project root:
+
+```env
+AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=https;AccountName=...
+ADMIN_PASSWORD=your-admin-password
+CONTACT_PASSCODE=your-contact-passcode
+```
+
 ## API Endpoints
 
 | Method | Endpoint | Description |
@@ -66,9 +82,7 @@ The dev server runs on `http://localhost:4200`.
 | GET | `/api/auth-status` | Check password/passcode status |
 | POST | `/api/upload` | Upload and parse a CV |
 | POST | `/api/edit` | Edit portfolio fields |
-| POST | `/api/reveal-contact` | Decrypt contact info |
-| POST | `/api/set-admin-password` | Set or change admin password |
-| POST | `/api/set-contact-passcode` | Set or change contact passcode |
+| POST | `/api/reveal-contact` | Reveal contact info (requires passcode if set) |
 
 ## Tech Stack
 
@@ -81,4 +95,4 @@ The dev server runs on `http://localhost:4200`.
 | CV Parsing | Mammoth (DOCX), unpdf (PDF), Cheerio (HTML) |
 | Backend | Azure Functions (production), Vite middleware (dev) |
 | Storage | Azure Blob Storage |
-| Security | SHA-256 (admin password), AES-256-GCM (contact encryption) |
+| Security | Plain env var auth (admin password + contact passcode) |

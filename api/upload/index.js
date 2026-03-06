@@ -1,19 +1,15 @@
 import Busboy from 'busboy'
 import { readPortfolio, writePortfolio } from '../lib/blob.js'
-import { checkAdminPassword, hashPassword } from '../lib/auth.js'
+import { checkAdminPassword } from '../lib/auth.js'
 import { parseCv } from '../lib/parseDocx.js'
 
 export default async function (context, req) {
   try {
     const { fields, fileBuffer, filename } = await parseMultipart(req)
 
-    // Check admin password against existing portfolio
-    const existing = await readPortfolio()
-    if (existing) {
-      if (!await checkAdminPassword(existing, fields.adminPassword || '')) {
-        context.res = { status: 401, body: 'Invalid admin password' }
-        return
-      }
+    if (!checkAdminPassword(fields.adminPassword || '')) {
+      context.res = { status: 401, body: 'Invalid admin password' }
+      return
     }
 
     if (!fileBuffer || fileBuffer.length === 0) {
@@ -27,12 +23,7 @@ export default async function (context, req) {
     }
 
     const isPdf = (filename || '').toLowerCase().endsWith('.pdf')
-    const portfolio = await parseCv(fileBuffer, fields.contactPasscode || '', isPdf)
-
-    // Set admin password if provided
-    if (fields.adminPassword) {
-      portfolio.meta.adminPasswordHash = await hashPassword(fields.adminPassword)
-    }
+    const portfolio = await parseCv(fileBuffer, isPdf)
 
     await writePortfolio(portfolio)
 

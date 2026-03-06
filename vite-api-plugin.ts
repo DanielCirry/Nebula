@@ -1,22 +1,19 @@
 import type { Plugin } from 'vite'
 import { readFileSync, writeFileSync, existsSync } from 'fs'
 import { resolve } from 'path'
-import bcryptjs from 'bcryptjs'
 
 const DATA_PATH = resolve('dev-portfolio.json')
 
-async function hashPassword(value: string): Promise<string> {
-  return bcryptjs.hash(value, 10)
+function checkAdminPassword(password: string): boolean {
+  const expected = process.env.ADMIN_PASSWORD
+  if (!expected) return true
+  return password === expected
 }
 
-async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  return bcryptjs.compare(password, hash)
-}
-
-async function checkAdminPassword(portfolio: any, password: string): Promise<boolean> {
-  const hash = portfolio?.meta?.adminPasswordHash
-  if (!hash) return true // no password set = open access
-  return verifyPassword(password, hash)
+function checkContactPasscode(passcode: string): boolean {
+  const expected = process.env.CONTACT_PASSCODE
+  if (!expected) return true
+  return passcode === expected
 }
 
 export function devApiPlugin(): Plugin {
@@ -32,8 +29,7 @@ export function devApiPlugin(): Plugin {
         }
         const portfolio = JSON.parse(readFileSync(DATA_PATH, 'utf-8'))
 
-        // Strip contact data when protected
-        if (portfolio.contact?.encrypted) {
+        if (process.env.CONTACT_PASSCODE && portfolio.contact?.data) {
           portfolio.contact = { encrypted: true }
         }
 
@@ -43,16 +39,10 @@ export function devApiPlugin(): Plugin {
 
       // GET /api/auth-status
       server.middlewares.use('/api/auth-status', (_req, res) => {
-        if (!existsSync(DATA_PATH)) {
-          res.writeHead(200, { 'Content-Type': 'application/json' })
-          res.end(JSON.stringify({ hasAdminPassword: false, hasPersonalPasscode: false }))
-          return
-        }
-        const portfolio = JSON.parse(readFileSync(DATA_PATH, 'utf-8'))
         res.writeHead(200, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify({
-          hasAdminPassword: !!portfolio.meta?.adminPasswordHash,
-          hasPersonalPasscode: !!portfolio.contact?.encrypted,
+          hasAdminPassword: !!process.env.ADMIN_PASSWORD,
+          hasPersonalPasscode: !!process.env.CONTACT_PASSCODE,
         }))
       })
 
@@ -65,19 +55,18 @@ export function devApiPlugin(): Plugin {
         if (!existsSync(DATA_PATH)) { res.writeHead(404).end('No data'); return }
 
         const portfolio = JSON.parse(readFileSync(DATA_PATH, 'utf-8'))
-        const contact = portfolio.contact
-        if (!contact?.encrypted || !contact?.data) {
-          res.writeHead(404).end('No protected contact data')
+        if (!portfolio.contact?.data) {
+          res.writeHead(404).end('No contact data')
           return
         }
 
-        if (!await verifyPassword(passcode, contact.passcodeHash)) {
+        if (!checkContactPasscode(passcode || '')) {
           res.writeHead(401).end('Invalid passcode')
           return
         }
 
         res.writeHead(200, { 'Content-Type': 'application/json' })
-        res.end(JSON.stringify(contact.data))
+        res.end(JSON.stringify(portfolio.contact.data))
       })
 
       // POST /api/upload
@@ -88,13 +77,9 @@ export function devApiPlugin(): Plugin {
           const { default: Busboy } = await import('busboy')
           const { fields, fileBuffer } = await parseMultipart(req, Busboy)
 
-          // Check admin password if one exists
-          if (existsSync(DATA_PATH)) {
-            const existing = JSON.parse(readFileSync(DATA_PATH, 'utf-8'))
-            if (!await checkAdminPassword(existing, fields.adminPassword || '')) {
-              res.writeHead(401).end('Invalid admin password')
-              return
-            }
+          if (!checkAdminPassword(fields.adminPassword || '')) {
+            res.writeHead(401).end('Invalid admin password')
+            return
           }
 
           if (!fileBuffer || fileBuffer.length === 0) {
@@ -109,12 +94,7 @@ export function devApiPlugin(): Plugin {
 
           const isPdf = (fields.filename || '').toLowerCase().endsWith('.pdf') || fields.mimetype === 'application/pdf'
           const { parseCv } = await import('./api/lib/parseDocx.js')
-          const portfolio = await parseCv(fileBuffer, fields.contactPasscode || '', isPdf)
-
-          // Set admin password if provided
-          if (fields.adminPassword) {
-            portfolio.meta.adminPasswordHash = await hashPassword(fields.adminPassword)
-          }
+          const portfolio = await parseCv(fileBuffer, isPdf)
 
           writeFileSync(DATA_PATH, JSON.stringify(portfolio, null, 2))
           res.writeHead(200, { 'Content-Type': 'application/json' })
@@ -133,79 +113,16 @@ export function devApiPlugin(): Plugin {
 
         if (!existsSync(DATA_PATH)) { res.writeHead(404).end('No portfolio data'); return }
 
-        const portfolio = JSON.parse(readFileSync(DATA_PATH, 'utf-8'))
-
-        if (!await checkAdminPassword(portfolio, adminPassword || '')) {
+        if (!checkAdminPassword(adminPassword || '')) {
           res.writeHead(401).end('Invalid admin password')
           return
         }
+
+        const portfolio = JSON.parse(readFileSync(DATA_PATH, 'utf-8'))
 
         const EDITABLE_KEYS = ['profile', 'skills', 'experience', 'education', 'projects', 'other']
         for (const [key, value] of Object.entries(edits)) {
           if (EDITABLE_KEYS.includes(key)) (portfolio as any)[key] = value
-        }
-
-        writeFileSync(DATA_PATH, JSON.stringify(portfolio, null, 2))
-        res.writeHead(200, { 'Content-Type': 'application/json' })
-        res.end(JSON.stringify({ ok: true }))
-      })
-
-      // POST /api/set-admin-password
-      server.middlewares.use('/api/set-admin-password', async (req, res) => {
-        if (req.method !== 'POST') { res.writeHead(405).end(); return }
-        const body = await readBody(req)
-        const { currentPassword, newPassword } = JSON.parse(body)
-
-        if (!existsSync(DATA_PATH)) { res.writeHead(404).end('No portfolio data'); return }
-
-        const portfolio = JSON.parse(readFileSync(DATA_PATH, 'utf-8'))
-
-        if (!await checkAdminPassword(portfolio, currentPassword || '')) {
-          res.writeHead(401).end('Invalid current password')
-          return
-        }
-
-        if (!newPassword) {
-          res.writeHead(200, { 'Content-Type': 'application/json' })
-          res.end(JSON.stringify({ ok: true }))
-          return
-        }
-
-        portfolio.meta.adminPasswordHash = await hashPassword(newPassword)
-
-        writeFileSync(DATA_PATH, JSON.stringify(portfolio, null, 2))
-        res.writeHead(200, { 'Content-Type': 'application/json' })
-        res.end(JSON.stringify({ ok: true }))
-      })
-
-      // POST /api/set-contact-passcode
-      server.middlewares.use('/api/set-contact-passcode', async (req, res) => {
-        if (req.method !== 'POST') { res.writeHead(405).end(); return }
-        const body = await readBody(req)
-        const { adminPassword, passcode } = JSON.parse(body)
-
-        if (!existsSync(DATA_PATH)) { res.writeHead(404).end('No portfolio data'); return }
-
-        const portfolio = JSON.parse(readFileSync(DATA_PATH, 'utf-8'))
-
-        if (!await checkAdminPassword(portfolio, adminPassword || '')) {
-          res.writeHead(401).end('Invalid admin password')
-          return
-        }
-
-        // Get current contact data
-        const contactData = portfolio.contact?.data || {}
-
-        if (!passcode) {
-          res.writeHead(200, { 'Content-Type': 'application/json' })
-          res.end(JSON.stringify({ ok: true }))
-          return
-        }
-
-        portfolio.contact = {
-          encrypted: true,
-          data: contactData,
-          passcodeHash: await hashPassword(passcode),
         }
 
         writeFileSync(DATA_PATH, JSON.stringify(portfolio, null, 2))

@@ -2,7 +2,6 @@ import mammoth from 'mammoth'
 import * as cheerio from 'cheerio'
 import { classifyHeading } from './sectionMap.js'
 import { classifySkills } from './skillMap.js'
-import bcryptjs from 'bcryptjs'
 
 const EMAIL_REGEX = /[\w.-]+@[\w.-]+\.\w{2,}/g
 const PHONE_REGEX = /(?:\+?\d{1,3}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{3,4}[-.\s]?\d{3,4}/g
@@ -11,7 +10,7 @@ const LINKEDIN_REGEX = /(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/[\w-]+/g
 // e.g. "London, UK", "Berlin, Germany", "São Paulo, Brazil", "Remote"
 const STANDALONE_LOCATION_REGEX = /^[A-Za-z\u00C0-\u024F]+(?:[\s-][A-Za-z\u00C0-\u024F]+)*,?\s+[A-Za-z\u00C0-\u024F]{2,}(?:\s[A-Za-z\u00C0-\u024F]+)*$/i
 
-export async function parseCv(buffer, contactPasscode, isPdf = false) {
+export async function parseCv(buffer, isPdf = false) {
   let html
   if (isPdf) {
     const { pdfToHtml } = await import('./parsePdf.js')
@@ -22,13 +21,13 @@ export async function parseCv(buffer, contactPasscode, isPdf = false) {
   }
   const $ = cheerio.load(html)
 
-  return buildPortfolio($, contactPasscode)
+  return buildPortfolio($)
 }
 
 // Keep old name for backwards compat
 export const parseDocx = parseCv
 
-async function buildPortfolio($, contactPasscode) {
+async function buildPortfolio($) {
 
   const headings = detectHeadings($)
   const { sections, sectionHeadings } = groupBySections($, headings)
@@ -39,7 +38,7 @@ async function buildPortfolio($, contactPasscode) {
   const location = extractLocation($, headings, name, contactInfo)
   if (location) contactInfo.location = location
 
-  const contact = buildContact(contactInfo, contactPasscode)
+  const contact = { encrypted: false, data: contactInfo }
 
   const profileHtml = sections.profile || ''
   const profileText = cheerio.load(profileHtml).text().trim()
@@ -787,18 +786,3 @@ function buildOtherSections(sections) {
   return other
 }
 
-function buildContact(contactInfo, passcode) {
-  if (Object.keys(contactInfo).length === 0) {
-    return { encrypted: false, data: contactInfo }
-  }
-
-  if (!passcode) {
-    return { encrypted: false, data: contactInfo }
-  }
-
-  return {
-    encrypted: true,
-    data: contactInfo,
-    passcodeHash: bcryptjs.hashSync(passcode, 10),
-  }
-}

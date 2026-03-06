@@ -1,5 +1,5 @@
 import { readPortfolio } from '../lib/blob.js'
-import { verifyPassword } from '../lib/auth.js'
+import { checkContactPasscode } from '../lib/auth.js'
 
 export default async function (context, req) {
   const passcode = req.body?.passcode
@@ -15,13 +15,12 @@ export default async function (context, req) {
       return
     }
 
-    const contact = portfolio.contact
-    if (!contact?.encrypted || !contact?.data) {
-      context.res = { status: 404, body: 'No protected contact data' }
+    if (!portfolio.contact?.data) {
+      context.res = { status: 404, body: 'No contact data' }
       return
     }
 
-    if (!await verifyPassword(passcode, contact.passcodeHash)) {
+    if (!checkContactPasscode(passcode)) {
       context.res = { status: 401, body: 'Incorrect passcode' }
       return
     }
@@ -29,7 +28,7 @@ export default async function (context, req) {
     context.res = {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(contact.data),
+      body: JSON.stringify(portfolio.contact.data),
     }
   } catch (err) {
     context.log.error('Reveal contact error:', err)

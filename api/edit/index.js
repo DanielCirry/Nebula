@@ -11,7 +11,7 @@ export default async function (context, req) {
       return
     }
 
-    if (!await checkAdminPassword(portfolio, adminPassword || '')) {
+    if (!checkAdminPassword(adminPassword || '')) {
       context.res = { status: 401, body: 'Invalid admin password' }
       return
     }
