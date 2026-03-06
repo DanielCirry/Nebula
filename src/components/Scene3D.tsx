@@ -1,4 +1,4 @@
-import { useRef, useMemo, useState } from 'react'
+import { useRef, useMemo, useState, useEffect } from 'react'
 import { Canvas, useFrame, extend } from '@react-three/fiber'
 import { OrbitControls, Html, shaderMaterial } from '@react-three/drei'
 import * as THREE from 'three'
@@ -284,16 +284,27 @@ function AtmosphereHalo({ color, opacity = 0.25 }: { color: THREE.Color; opacity
   )
 }
 
+function useIsMobile() {
+  const [mobile, setMobile] = useState(() => window.innerWidth < 768)
+  useEffect(() => {
+    const onResize = () => setMobile(window.innerWidth < 768)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+  return mobile
+}
+
 function BlobScene({ sections, activeSection, onSelect }: SceneProps) {
   const groupRef = useRef<THREE.Group>(null!)
   const matRef = useRef<any>(null!)
   const [hovered, setHovered] = useState<string | null>(null)
+  const isMobile = useIsMobile()
 
   const targetPos = useMemo(
-    () => (activeSection ? new THREE.Vector3(-3.0, 0, 0) : new THREE.Vector3(0, 0, 0)),
-    [activeSection]
+    () => (activeSection ? new THREE.Vector3(isMobile ? -1.2 : -3.0, isMobile ? -1.5 : 0, 0) : new THREE.Vector3(0, 0, 0)),
+    [activeSection, isMobile]
   )
-  const targetScale = activeSection ? 0.55 : 1
+  const targetScale = activeSection ? (isMobile ? 0.35 : 0.55) : 1
 
   const defaultProfile = { distort: 0.2, speed: 0.7, brightness: 0.8, color1: '#6366f1', color2: '#a78bfa', color3: '#06b6d4' }
   const profile = activeSection ? (SECTION_PROFILES[activeSection] || defaultProfile) : null
@@ -354,8 +365,9 @@ function BlobScene({ sections, activeSection, onSelect }: SceneProps) {
       {(() => {
         const angles = getHotspotAngles(sections.length)
         const dynColors = ['#f59e0b', '#14b8a6', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899']
+        const hotspotRadius = isMobile ? 1.9 : 2.3
         return sections.map((section, i) => {
-        const pos = toXYZ(angles[i].theta, angles[i].phi, 2.3)
+        const pos = toXYZ(angles[i].theta, angles[i].phi, hotspotRadius)
         const isHot = hovered === section.id
         const isActive = activeSection === section.id
         const accent = SECTION_ACCENTS[section.id] || dynColors[i % dynColors.length]
@@ -379,9 +391,9 @@ function BlobScene({ sections, activeSection, onSelect }: SceneProps) {
             </mesh>
             <Html
               center
-              distanceFactor={10}
+              distanceFactor={isMobile ? 8 : 10}
               zIndexRange={[50, 40]}
-              style={{ pointerEvents: 'auto', transform: 'translateY(-20px)' }}
+              style={{ pointerEvents: 'auto', transform: `translateY(${isMobile ? '-14px' : '-20px'})` }}
             >
               <div
                 onClick={(e) => { e.stopPropagation(); onSelect(section.id) }}
@@ -389,7 +401,7 @@ function BlobScene({ sections, activeSection, onSelect }: SceneProps) {
                 onMouseLeave={() => { setHovered(null); document.body.style.cursor = '' }}
                 style={{
                   color: 'white',
-                  fontSize: 12,
+                  fontSize: isMobile ? 10 : 12,
                   fontFamily: 'Space Grotesk, sans-serif',
                   fontWeight: 700,
                   letterSpacing: '0.12em',

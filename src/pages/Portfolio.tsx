@@ -216,7 +216,7 @@ export default function Portfolio() {
         {activeSection && current && (
           <motion.div
             key={activeSection}
-            className="absolute right-0 top-0 bottom-0 z-20 w-[75%] md:w-[55%] md:min-w-[420px] overflow-y-auto pointer-events-auto"
+            className="absolute right-0 top-0 bottom-0 z-20 w-full md:w-[55%] md:min-w-[420px] overflow-y-auto pointer-events-auto"
             initial={{ x: '100%', opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: '100%', opacity: 0 }}
