@@ -1,5 +1,5 @@
 import { useRef, useMemo, useState, useEffect } from 'react'
-import { Canvas, useFrame, extend } from '@react-three/fiber'
+import { Canvas, useFrame, useThree, extend } from '@react-three/fiber'
 import { OrbitControls, Html, shaderMaterial } from '@react-three/drei'
 import * as THREE from 'three'
 
@@ -299,6 +299,13 @@ function BlobScene({ sections, activeSection, onSelect }: SceneProps) {
   const matRef = useRef<any>(null!)
   const [hovered, setHovered] = useState<string | null>(null)
   const isMobile = useIsMobile()
+  const { camera } = useThree()
+
+  useEffect(() => {
+    const cam = camera as THREE.PerspectiveCamera
+    cam.fov = isMobile ? 75 : 45
+    cam.updateProjectionMatrix()
+  }, [isMobile, camera])
 
   const targetPos = useMemo(
     () => (activeSection ? new THREE.Vector3(isMobile ? -1.2 : -3.0, isMobile ? -1.5 : 0, 0) : new THREE.Vector3(0, 0, 0)),
@@ -365,7 +372,7 @@ function BlobScene({ sections, activeSection, onSelect }: SceneProps) {
       {(() => {
         const angles = getHotspotAngles(sections.length)
         const dynColors = ['#f59e0b', '#14b8a6', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899']
-        const hotspotRadius = isMobile ? 1.9 : 2.3
+        const hotspotRadius = isMobile ? 1.7 : 2.3
         return sections.map((section, i) => {
         const pos = toXYZ(angles[i].theta, angles[i].phi, hotspotRadius)
         const isHot = hovered === section.id

@@ -10,10 +10,9 @@ export default function AIBuildLog() {
       <div className="font-mono text-sm leading-relaxed max-w-2xl">
         <p className="text-accent/50 mb-2 text-xs tracking-wider">{'>'} system.log</p>
         <p className="text-text-secondary">
-          This portfolio was generated from a CV document using AI-assisted development.
-          The system parses DOCX files, intelligently detects and normalizes sections,
-          and renders them into this interactive site. Built with React, TypeScript,
-          Tailwind CSS, and Azure serverless functions.
+          This site was built by parsing a CV document, pulling out each section automatically,
+          and turning it all into the interactive portfolio you're looking at now.
+          Powered by React, TypeScript, Tailwind CSS, and Azure.
         </p>
       </div>
     </motion.div>
