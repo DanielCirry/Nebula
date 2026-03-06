@@ -165,11 +165,13 @@ export function devApiPlugin(): Plugin {
           return
         }
 
-        if (newPassword) {
-          portfolio.meta.adminPasswordHash = await hashPassword(newPassword)
-        } else {
-          delete portfolio.meta.adminPasswordHash
+        if (!newPassword) {
+          res.writeHead(200, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ ok: true }))
+          return
         }
+
+        portfolio.meta.adminPasswordHash = await hashPassword(newPassword)
 
         writeFileSync(DATA_PATH, JSON.stringify(portfolio, null, 2))
         res.writeHead(200, { 'Content-Type': 'application/json' })
@@ -194,14 +196,16 @@ export function devApiPlugin(): Plugin {
         // Get current contact data
         const contactData = portfolio.contact?.data || {}
 
-        if (passcode) {
-          portfolio.contact = {
-            encrypted: true,
-            data: contactData,
-            passcodeHash: await hashPassword(passcode),
-          }
-        } else {
-          portfolio.contact = { encrypted: false, data: contactData }
+        if (!passcode) {
+          res.writeHead(200, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ ok: true }))
+          return
+        }
+
+        portfolio.contact = {
+          encrypted: true,
+          data: contactData,
+          passcodeHash: await hashPassword(passcode),
         }
 
         writeFileSync(DATA_PATH, JSON.stringify(portfolio, null, 2))

@@ -26,12 +26,9 @@ export default function Upload() {
   const [pcMsg, setPcMsg] = useState<{ text: string; error: boolean } | null>(null)
 
   // Edit state
-  const [showEdit, setShowEdit] = useState(false)
-  const [editPw, setEditPw] = useState('')
-  const [editMsg, setEditMsg] = useState<{ text: string; error: boolean } | null>(null)
-  const [editSummary, setEditSummary] = useState('')
-  const [editTitle, setEditTitle] = useState('')
-  const [editInitials, setEditInitials] = useState('')
+  const [editSection, setEditSection] = useState<string | null>(null)
+  const [editJson, setEditJson] = useState('')
+  const [editStatus, setEditStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
 
   const fetchData = () => {
     fetch('/api/data').then(r => {
@@ -41,9 +38,6 @@ export default function Upload() {
       if (data) {
         setHasPortfolio(true)
         setPortfolio(data)
-        setEditSummary(data.profile.summary)
-        setEditTitle(data.meta.title)
-        setEditInitials(data.meta.initials)
       }
     }).catch(() => {})
   }
@@ -107,7 +101,7 @@ export default function Upload() {
         setPwMsg({ text: res.status === 401 ? 'Invalid current password' : 'Failed', error: true })
         return
       }
-      setPwMsg({ text: newPw ? 'Password updated' : 'Password removed', error: false })
+      setPwMsg({ text: 'Password updated', error: false })
       setCurrentPw('')
       setNewPw('')
       fetchAuthStatus()
@@ -128,7 +122,7 @@ export default function Upload() {
         setPcMsg({ text: res.status === 401 ? 'Invalid admin password' : 'Failed', error: true })
         return
       }
-      setPcMsg({ text: newPasscode ? 'Passcode updated' : 'Passcode removed — personal info is now public', error: false })
+      setPcMsg({ text: 'Passcode updated', error: false })
       setAdminPwForPasscode('')
       setNewPasscode('')
       fetchAuthStatus()
@@ -137,42 +131,37 @@ export default function Upload() {
     }
   }
 
-  const handleEdit = async () => {
-    setEditMsg(null)
-    const edits: Record<string, any> = {}
+  const handleEdit = (section: string) => {
+    if (!portfolio) return
+    setEditSection(section)
+    setEditJson(JSON.stringify((portfolio as any)[section], null, 2))
+    setEditStatus('idle')
+  }
 
-    if (editSummary !== portfolio?.profile.summary) {
-      edits.profile = { summary: editSummary }
-    }
-    if (editTitle !== portfolio?.meta.title || editInitials !== portfolio?.meta.initials) {
-      edits.meta = {
-        ...portfolio?.meta,
-        title: editTitle,
-        initials: editInitials,
-      }
-    }
-
-    if (Object.keys(edits).length === 0) {
-      setEditMsg({ text: 'No changes to save', error: false })
-      return
-    }
-
+  const handleSaveEdit = async () => {
+    if (!editSection) return
+    setEditStatus('saving')
     try {
+      const parsed = JSON.parse(editJson)
       const res = await fetch('/api/edit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ adminPassword: editPw, data: edits }),
+        body: JSON.stringify({ adminPassword, data: { [editSection]: parsed } }),
       })
-      if (!res.ok) {
-        setEditMsg({ text: res.status === 401 ? 'Invalid admin password' : 'Edit failed', error: true })
-        return
-      }
-      setEditMsg({ text: 'Saved', error: false })
-      fetchData()
+      if (!res.ok) { setEditStatus('error'); return }
+      setPortfolio(prev => prev ? { ...prev, [editSection]: parsed } : prev)
+      setEditStatus('saved')
+      setTimeout(() => setEditSection(null), 1000)
     } catch {
-      setEditMsg({ text: 'Unable to connect', error: true })
+      setEditStatus('error')
     }
   }
+
+  const editableSections = portfolio
+    ? ['profile', 'skills', 'experience', 'education', 'projects', 'other'].filter(
+        s => (portfolio as any)[s] !== undefined
+      )
+    : []
 
   const inputClass = 'w-full px-4 py-2.5 rounded-lg glass text-text-primary placeholder:text-text-muted focus:outline-none transition-colors'
   const btnSecondary = 'w-full py-2.5 rounded-lg border border-border text-text-secondary hover:border-accent/40 hover:text-accent transition-colors cursor-pointer text-sm'
@@ -237,54 +226,37 @@ export default function Upload() {
         {/* Post-upload management */}
         {hasPortfolio && (
           <div className="mt-12 space-y-4 pb-12">
-            {/* Edit Section */}
-            <div>
-              <button onClick={() => { setShowEdit(!showEdit); setEditMsg(null) }} className={btnSecondary}>
-                Edit Portfolio
-              </button>
-              {showEdit && portfolio && (
-                <div className="mt-3 space-y-3 p-4 rounded-lg glass">
-                  {authStatus?.hasAdminPassword && (
-                    <input
-                      type="password"
-                      value={editPw}
-                      onChange={(e) => setEditPw(e.target.value)}
-                      className={inputClass}
-                      placeholder="Admin password"
-                      aria-label="Admin password for editing"
-                    />
-                  )}
-                  <div>
-                    <label className="block text-xs text-text-muted mb-1">Initials</label>
-                    <input
-                      type="text"
-                      value={editInitials}
-                      onChange={(e) => setEditInitials(e.target.value)}
-                      className={inputClass}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-text-muted mb-1">Title</label>
-                    <input
-                      type="text"
-                      value={editTitle}
-                      onChange={(e) => setEditTitle(e.target.value)}
-                      className={inputClass}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-text-muted mb-1">Summary</label>
-                    <textarea
-                      value={editSummary}
-                      onChange={(e) => setEditSummary(e.target.value)}
-                      className={`${inputClass} h-32 text-sm`}
-                    />
-                  </div>
-                  <button onClick={handleEdit} className={btnSmall}>Save Changes</button>
-                  {editMsg && <p className={`text-xs ${editMsg.error ? 'text-red-400' : 'text-accent'}`}>{editMsg.text}</p>}
+            {/* Edit Sections */}
+            {portfolio && (
+              <div>
+                <p className="text-sm text-text-secondary mb-2">Edit Sections</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {editableSections.map(section => (
+                    <button key={section} onClick={() => handleEdit(section)}
+                      className={`${btnSecondary} capitalize`}>
+                      {section}
+                    </button>
+                  ))}
                 </div>
-              )}
-            </div>
+
+                {editSection && (
+                  <div className="mt-4 p-4 rounded-lg glass">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-sm font-medium text-accent capitalize">{editSection}</h3>
+                      <button onClick={() => setEditSection(null)} className="text-xs text-text-muted hover:text-text-secondary">Close</button>
+                    </div>
+                    <textarea value={editJson} onChange={e => setEditJson(e.target.value)} rows={16}
+                      className={`${inputClass} text-xs font-mono resize-y`} />
+                    <div className="flex items-center gap-3 mt-3">
+                      <button onClick={handleSaveEdit} disabled={editStatus === 'saving'} className={btnSmall}>
+                        {editStatus === 'saving' ? 'Saving...' : editStatus === 'saved' ? 'Saved!' : 'Save'}
+                      </button>
+                      {editStatus === 'error' && <span className="text-xs text-red-400">Failed — check JSON syntax</span>}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Security */}
             <div>
@@ -308,7 +280,7 @@ export default function Upload() {
                     value={newPw}
                     onChange={(e) => setNewPw(e.target.value)}
                     className={inputClass}
-                    placeholder="New password (leave empty to remove)"
+                    placeholder="New password"
                     aria-label="New admin password"
                   />
                   <button onClick={handleSetPassword} className={btnSmall}>Save</button>
@@ -338,7 +310,7 @@ export default function Upload() {
                     value={newPasscode}
                     onChange={(e) => setNewPasscode(e.target.value)}
                     className={inputClass}
-                    placeholder="New passcode (leave empty to remove)"
+                    placeholder="New passcode"
                     aria-label="Contact passcode"
                   />
                   <button onClick={handleSetPasscode} className={btnSmall}>Save</button>

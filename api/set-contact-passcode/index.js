@@ -19,14 +19,15 @@ export default async function (context, req) {
     // Get current contact data
     const contactData = portfolio.contact?.data || {}
 
-    if (passcode) {
-      portfolio.contact = {
-        encrypted: true,
-        data: contactData,
-        passcodeHash: await hashPassword(passcode),
-      }
-    } else {
-      portfolio.contact = { encrypted: false, data: contactData }
+    if (!passcode) {
+      context.res = { status: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ok: true }) }
+      return
+    }
+
+    portfolio.contact = {
+      encrypted: true,
+      data: contactData,
+      passcodeHash: await hashPassword(passcode),
     }
 
     await writePortfolio(portfolio)

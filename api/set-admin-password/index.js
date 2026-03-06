@@ -16,11 +16,12 @@ export default async function (context, req) {
       return
     }
 
-    if (newPassword) {
-      portfolio.meta.adminPasswordHash = await hashPassword(newPassword)
-    } else {
-      delete portfolio.meta.adminPasswordHash
+    if (!newPassword) {
+      context.res = { status: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ok: true }) }
+      return
     }
+
+    portfolio.meta.adminPasswordHash = await hashPassword(newPassword)
 
     await writePortfolio(portfolio)
 
