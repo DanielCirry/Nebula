@@ -63,10 +63,10 @@ function parseMultipart(req) {
     })
     busboy.on('error', reject)
 
-    if (req.rawBody) {
-      busboy.end(typeof req.rawBody === 'string' ? Buffer.from(req.rawBody, 'binary') : req.rawBody)
-    } else if (req.body) {
-      busboy.end(typeof req.body === 'string' ? Buffer.from(req.body, 'binary') : req.body)
+    const raw = req.rawBody || req.body
+    if (raw) {
+      const buf = Buffer.isBuffer(raw) ? raw : Buffer.from(raw, 'base64')
+      busboy.end(buf)
     } else {
       resolve({ fields, fileBuffer: Buffer.alloc(0), filename: '' })
     }
