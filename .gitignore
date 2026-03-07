@@ -4,3 +4,4 @@ dev-portfolio.json
 *.local
 .env
 .env.*
+api/local.settings.json
