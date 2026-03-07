@@ -1,6 +1,6 @@
 import { BlobServiceClient } from '@azure/storage-blob'
 import { readPortfolio } from '../lib/blob.js'
-import { checkAdminPassword } from '../lib/auth.js'
+import { checkUploadPassword } from '../lib/auth.js'
 
 export default async function (context, req) {
   const { password } = req.body || {}
@@ -12,7 +12,7 @@ export default async function (context, req) {
       return
     }
 
-    if (!await checkAdminPassword(portfolio, password || '')) {
+    if (!checkUploadPassword(password || '')) {
       context.res = { status: 401, body: 'Invalid password' }
       return
     }

@@ -3,7 +3,7 @@ export interface PortfolioMeta {
   title: string
   generatedAt: string
   version: number
-  adminPasswordHash?: string
+
   sectionHeadings?: Record<string, string>
 }
 

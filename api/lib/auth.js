@@ -1,5 +1,5 @@
-export function checkAdminPassword(password) {
-  const expected = process.env.ADMIN_PASSWORD
+export function checkUploadPassword(password) {
+  const expected = process.env.UPLOAD_PASSWORD
   if (!expected) return true // no password set = open access
   return password === expected
 }

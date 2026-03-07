@@ -1,14 +1,14 @@
 import Busboy from 'busboy'
 import { readPortfolio, writePortfolio } from '../lib/blob.js'
-import { checkAdminPassword } from '../lib/auth.js'
+import { checkUploadPassword } from '../lib/auth.js'
 import { parseCv } from '../lib/parseDocx.js'
 
 export default async function (context, req) {
   try {
     const { fields, fileBuffer, filename } = await parseMultipart(req)
 
-    if (!checkAdminPassword(fields.adminPassword || '')) {
-      context.res = { status: 401, body: 'Invalid admin password' }
+    if (!checkUploadPassword(fields.uploadPassword || '')) {
+      context.res = { status: 401, body: 'Invalid upload password' }
       return
     }
 

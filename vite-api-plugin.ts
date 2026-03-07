@@ -4,8 +4,8 @@ import { resolve } from 'path'
 
 const DATA_PATH = resolve('dev-portfolio.json')
 
-function checkAdminPassword(password: string): boolean {
-  const expected = process.env.ADMIN_PASSWORD
+function checkUploadPassword(password: string): boolean {
+  const expected = process.env.UPLOAD_PASSWORD
   if (!expected) return true
   return password === expected
 }
@@ -41,7 +41,7 @@ export function devApiPlugin(): Plugin {
       server.middlewares.use('/api/auth-status', (_req, res) => {
         res.writeHead(200, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify({
-          hasAdminPassword: !!process.env.ADMIN_PASSWORD,
+          hasUploadPassword: !!process.env.UPLOAD_PASSWORD,
           hasPersonalPasscode: !!process.env.CONTACT_PASSCODE,
         }))
       })
@@ -77,8 +77,8 @@ export function devApiPlugin(): Plugin {
           const { default: Busboy } = await import('busboy')
           const { fields, fileBuffer } = await parseMultipart(req, Busboy)
 
-          if (!checkAdminPassword(fields.adminPassword || '')) {
-            res.writeHead(401).end('Invalid admin password')
+          if (!checkUploadPassword(fields.uploadPassword || '')) {
+            res.writeHead(401).end('Invalid upload password')
             return
           }
 
@@ -109,12 +109,12 @@ export function devApiPlugin(): Plugin {
       server.middlewares.use('/api/edit', async (req, res) => {
         if (req.method !== 'POST') { res.writeHead(405).end(); return }
         const body = await readBody(req)
-        const { adminPassword, data: edits } = JSON.parse(body)
+        const { uploadPassword, data: edits } = JSON.parse(body)
 
         if (!existsSync(DATA_PATH)) { res.writeHead(404).end('No portfolio data'); return }
 
-        if (!checkAdminPassword(adminPassword || '')) {
-          res.writeHead(401).end('Invalid admin password')
+        if (!checkUploadPassword(uploadPassword || '')) {
+          res.writeHead(401).end('Invalid upload password')
           return
         }
 

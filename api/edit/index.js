@@ -1,8 +1,8 @@
 import { readPortfolio, writePortfolio } from '../lib/blob.js'
-import { checkAdminPassword } from '../lib/auth.js'
+import { checkUploadPassword } from '../lib/auth.js'
 
 export default async function (context, req) {
-  const { adminPassword, data: edits } = req.body || {}
+  const { uploadPassword, data: edits } = req.body || {}
 
   try {
     const portfolio = await readPortfolio()
@@ -11,8 +11,8 @@ export default async function (context, req) {
       return
     }
 
-    if (!checkAdminPassword(adminPassword || '')) {
-      context.res = { status: 401, body: 'Invalid admin password' }
+    if (!checkUploadPassword(uploadPassword || '')) {
+      context.res = { status: 401, body: 'Invalid upload password' }
       return
     }
 

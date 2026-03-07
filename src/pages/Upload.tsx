@@ -3,14 +3,14 @@ import { Link, useNavigate } from 'react-router-dom'
 import type { PortfolioData } from '../../shared/types'
 
 export default function Upload() {
-  const [adminPassword, setAdminPassword] = useState('')
+  const [uploadPassword, setUploadPassword] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [status, setStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
 
-  const [authStatus, setAuthStatus] = useState<{ hasAdminPassword: boolean; hasPersonalPasscode: boolean } | null>(null)
+  const [authStatus, setAuthStatus] = useState<{ hasUploadPassword: boolean; hasPersonalPasscode: boolean } | null>(null)
   const [hasPortfolio, setHasPortfolio] = useState(false)
   const [portfolio, setPortfolio] = useState<PortfolioData | null>(null)
 
@@ -56,7 +56,7 @@ export default function Upload() {
 
     const formData = new FormData()
     formData.append('file', file)
-    if (adminPassword) formData.append('adminPassword', adminPassword)
+    if (uploadPassword) formData.append('uploadPassword', uploadPassword)
 
     try {
       const res = await fetch('/api/upload', {
@@ -65,7 +65,7 @@ export default function Upload() {
       })
 
       if (!res.ok) {
-        const msg = res.status === 401 ? 'Invalid admin password' : 'Upload failed'
+        const msg = res.status === 401 ? 'Invalid upload password' : 'Upload failed'
         setErrorMsg(msg)
         setStatus('error')
         return
@@ -94,7 +94,7 @@ export default function Upload() {
       const res = await fetch('/api/edit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ adminPassword, data: { [editSection]: parsed } }),
+        body: JSON.stringify({ uploadPassword, data: { [editSection]: parsed } }),
       })
       if (!res.ok) { setEditStatus('error'); return }
       setPortfolio(prev => prev ? { ...prev, [editSection]: parsed } : prev)
@@ -134,13 +134,13 @@ export default function Upload() {
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {authStatus?.hasAdminPassword && (
+          {authStatus?.hasUploadPassword && (
             <div>
-              <label className="block text-sm text-text-secondary mb-1.5">Admin Password</label>
+              <label className="block text-sm text-text-secondary mb-1.5">Upload Password</label>
               <input
                 type="password"
-                value={adminPassword}
-                onChange={(e) => setAdminPassword(e.target.value)}
+                value={uploadPassword}
+                onChange={(e) => setUploadPassword(e.target.value)}
                 className={inputClass}
                 placeholder="Required — portfolio is password-protected"
               />

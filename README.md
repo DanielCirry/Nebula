@@ -63,14 +63,14 @@ The dev server runs on `http://localhost:4200`.
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `AZURE_STORAGE_CONNECTION_STRING` | Yes | Azure Blob Storage connection string (from Storage Account → Access keys) |
-| `ADMIN_PASSWORD` | No | Protects upload and edit endpoints. If unset, anyone can upload/edit. |
+| `UPLOAD_PASSWORD` | No | Protects upload and edit endpoints. If unset, anyone can upload/edit. |
 | `CONTACT_PASSCODE` | No | Protects personal info visibility. If unset, contact details are shown publicly. |
 
 For local development, create a `.env` file in the project root:
 
 ```env
 AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=https;AccountName=...
-ADMIN_PASSWORD=your-admin-password
+UPLOAD_PASSWORD=your-upload-password
 CONTACT_PASSCODE=your-contact-passcode
 ```
 
